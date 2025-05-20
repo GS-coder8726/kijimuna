@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声読み上げアプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* 上寄せに変更 */
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 2rem; /* 上部に余白を追加 */
+            padding-bottom: 2rem; /* 下部に余白を追加 */
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            color: #1f2937; /* Tailwind gray-800 */
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 90%;
+            max-width: 600px;
+        }
+        .text-input-group {
+            margin-bottom: 2rem; /* グループ間のマージンを少し増やす */
+        }
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* Tailwind gray-300 */
+            border-radius: 0.375rem;
+            min-height: 100px;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6; /* Tailwind blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .control-group {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .control-group label {
+            display: block;
+            text-sm font-medium text-gray-700 mb-1;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 0.5rem; /* h-2 */
+            background-color: #e5e7eb; /* bg-gray-200 */
+            border-radius: 9999px; /* rounded-lg */
+            appearance: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 1.25rem; /* w-5 */
+            height: 1.25rem; /* h-5 */
+            background-color: #3b82f6; /* bg-blue-500 */
+            border-radius: 9999px; /* rounded-full */
+            cursor: pointer;
+        }
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: #3b82f6;
+            border-radius: 9999px;
+            cursor: pointer;
+            border: none;
+        }
+        .control-value {
+            text-align: right;
+            font-size: 0.875rem; /* text-sm */
+            color: #6b7280; /* text-gray-500 */
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* Tailwind gray-300 */
+            border-radius: 0.375rem;
+            background-color: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+            transition: border-color 0.2s;
+        }
+        select:focus {
+            outline: none;
+            border-color: #3b82f6; /* Tailwind blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem; /* ボタン上部のマージン調整 */
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            width: 100%; /* ボタンを横幅いっぱいに */
+        }
+        .play-button {
+            background-color: #3b82f6; /* Tailwind blue-500 */
+            color: white;
+        }
+        .play-button:hover {
+            background-color: #2563eb; /* Tailwind blue-600 */
+        }
+        .message-box {
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .message-box.info {
+            background-color: #eff6ff; /* Tailwind blue-50 */
+            color: #1e40af; /* Tailwind blue-800 */
+        }
+        .message-box.warning {
+            background-color: #fffbeb; /* Tailwind yellow-50 */
+            color: #92400e; /* Tailwind yellow-800 */
+        }
+        h1 {
+            font-size: 1.875rem; /* Tailwind text-3xl */
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* レスポンシブ対応 */
+        @media (max-width: 640px) {
+            body {
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.5rem; /* Tailwind text-2xl */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>音声読み上げアプリ</h1>
+
+        <div class="text-input-group">
+            <label for="textToSpeech1" class="block text-sm font-medium text-gray-700 mb-1">シーサー君:</label>
+            <textarea id="textToSpeech1" placeholder="ここに読み上げたいテキストを入力してください..."></textarea>
+
+            <div class="control-group">
+                <label for="voiceSelect1" class="block text-sm font-medium text-gray-700 mb-1">音声選択:</label>
+                <select id="voiceSelect1"></select>
+            </div>
+
+            <div class="control-group">
+                <label for="rateControl1">再生速度:</label>
+                <input type="range" id="rateControl1" min="0.5" max="2" step="0.1" value="1">
+                <div id="rateValue1" class="control-value">1.0</div>
+            </div>
+
+            <div class="control-group">
+                <label for="pitchControl1">声の高さ:</label>
+                <input type="range" id="pitchControl1" min="0" max="2" step="0.1" value="1">
+                <div id="pitchValue1" class="control-value">1.0</div>
+            </div>
+
+            <div class="button-group">
+                <button id="playButton1" class="play-button">再生</button>
+            </div>
+        </div>
+
+        <div class="text-input-group">
+            <label for="textToSpeech2" class="block text-sm font-medium text-gray-700 mb-1">キジムナー:</label>
+            <textarea id="textToSpeech2" placeholder="ここに読み上げたいテキストを入力してください..."></textarea>
+
+            <div class="control-group">
+                <label for="voiceSelect2" class="block text-sm font-medium text-gray-700 mb-1">音声選択:</label>
+                <select id="voiceSelect2"></select>
+            </div>
+
+            <div class="control-group">
+                <label for="rateControl2">再生速度:</label>
+                <input type="range" id="rateControl2" min="0.5" max="2" step="0.1" value="1">
+                <div id="rateValue2" class="control-value">1.0</div>
+            </div>
+
+            <div class="control-group">
+                <label for="pitchControl2">声の高さ:</label>
+                <input type="range" id="pitchControl2" min="0" max="2" step="0.1" value="1">
+                <div id="pitchValue2" class="control-value">1.0</div>
+            </div>
+            <div class="button-group">
+                <button id="playButton2" class="play-button">再生</button>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Web Speech APIが利用可能かチェック
+        if ('speechSynthesis' in window) {
+            const synth = window.speechSynthesis;
+            let voices = [];
+            let utterance;
+
+            // UI要素の取得
+            const textToSpeech1 = document.getElementById('textToSpeech1');
+            const voiceSelect1 = document.getElementById('voiceSelect1');
+            const rateControl1 = document.getElementById('rateControl1');
+            const pitchControl1 = document.getElementById('pitchControl1');
+            const rateValue1 = document.getElementById('rateValue1');
+            const pitchValue1 = document.getElementById('pitchValue1');
+            const playButton1 = document.getElementById('playButton1');
+
+            const textToSpeech2 = document.getElementById('textToSpeech2');
+            const voiceSelect2 = document.getElementById('voiceSelect2');
+            const rateControl2 = document.getElementById('rateControl2');
+            const pitchControl2 = document.getElementById('pitchControl2');
+            const rateValue2 = document.getElementById('rateValue2');
+            const pitchValue2 = document.getElementById('pitchValue2');
+            const playButton2 = document.getElementById('playButton2');
+
+            const messageBox = document.getElementById('messageBox');
+
+            // メッセージ表示関数
+            function showMessage(text, type = 'info') {
+                messageBox.textContent = text;
+                messageBox.className = `message-box ${type}`;
+                messageBox.style.display = 'block';
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 3000); // 3秒後にメッセージを消す
+            }
+
+            // 利用可能な日本語音声リストを取得し、select要素に設定する関数
+            function populateVoiceList() {
+                voices = synth.getVoices().filter(voice => voice.lang.startsWith('ja')); // 日本語音声のみフィルタリング
+                
+                const populateSelect = (selectElement) => {
+                    const previouslySelected = selectElement.value;
+                    selectElement.innerHTML = ''; // 既存のオプションをクリア
+
+                    if (voices.length === 0) {
+                        const noVoiceOption = document.createElement('option');
+                        noVoiceOption.textContent = '利用可能な日本語音声がありません';
+                        noVoiceOption.disabled = true;
+                        selectElement.appendChild(noVoiceOption);
+                        return;
+                    }
+
+                    voices.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        option.setAttribute('data-lang', voice.lang);
+                        option.setAttribute('data-name', voice.name);
+                        selectElement.appendChild(option);
+                    });
+
+                    if (previouslySelected) {
+                        const exists = Array.from(selectElement.options).some(opt => opt.value === previouslySelected);
+                        if (exists) {
+                           selectElement.value = previouslySelected;
+                        }
+                    }
+                     // デフォルトで最初の日本語音声を選択 (もしあれば)
+                    if (!selectElement.value && selectElement.options.length > 0 && !selectElement.options[0].disabled) {
+                        selectElement.selectedIndex = 0;
+                    }
+                };
+
+                populateSelect(voiceSelect1);
+                populateSelect(voiceSelect2);
+
+                if (voices.length === 0 && synth.getVoices().length > 0) {
+                     showMessage('利用可能な日本語音声が見つかりませんでした。他の言語の音声は利用可能です。', 'warning');
+                } else if (voices.length === 0 && synth.getVoices().length === 0) {
+                     showMessage('利用可能な音声の読み込みに失敗しました。ブラウザが音声合成を完全にサポートしているか確認してください。', 'warning');
+                }
+            }
+
+            // 'voiceschanged' イベント
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+            // 初回ロード時にも試みる
+            populateVoiceList();
+
+
+            // スライダーの値表示を更新するイベントリスナー
+            rateControl1.addEventListener('input', () => rateValue1.textContent = parseFloat(rateControl1.value).toFixed(1));
+            pitchControl1.addEventListener('input', () => pitchValue1.textContent = parseFloat(pitchControl1.value).toFixed(1));
+            rateControl2.addEventListener('input', () => rateValue2.textContent = parseFloat(rateControl2.value).toFixed(1));
+            pitchControl2.addEventListener('input', () => pitchValue2.textContent = parseFloat(pitchControl2.value).toFixed(1));
+
+            // 再生処理関数
+            function playText(textElement, voiceSelectElement, rateElement, pitchElement, groupName) {
+                const text = textElement.value;
+                const selectedVoiceName = voiceSelectElement.selectedOptions[0]?.getAttribute('data-name');
+
+                if (text.trim() === '') {
+                    showMessage(`${groupName}のテキストが入力されていません。`, 'warning');
+                    return;
+                }
+
+                if (synth.speaking) {
+                    synth.cancel(); // 他の読み上げをキャンセル
+                }
+
+                utterance = new SpeechSynthesisUtterance(text);
+                const selectedVoice = voices.find(voice => voice.name === selectedVoiceName);
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                } else if (voices.length > 0) {
+                    utterance.voice = voices[0]; // 利用可能な最初の日本語音声を使用
+                    showMessage(`選択された音声が見つかりません。デフォルトの日本語音声 (${voices[0].name}) で再生します。`, 'warning');
+                } else {
+                    showMessage('利用可能な日本語音声がありません。再生できません。', 'warning');
+                    return;
+                }
+
+                utterance.rate = parseFloat(rateElement.value);
+                utterance.pitch = parseFloat(pitchElement.value);
+
+                // 読み上げ終了時の処理
+                utterance.onend = () => {
+                    // console.log(`${groupName}の読み上げが終了しました。`);
+                };
+                // エラー発生時の処理
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance.onerror', event);
+                    showMessage(`${groupName}の読み上げ中にエラーが発生しました: ${event.error}`, 'warning');
+                };
+
+                synth.speak(utterance);
+                showMessage(`${groupName}の読み上げを開始します。`, 'info');
+            }
+
+            // 再生ボタンのイベントリスナー
+            playButton1.addEventListener('click', () => {
+                playText(textToSpeech1, voiceSelect1, rateControl1, pitchControl1, 'シーサー君');
+            });
+
+            playButton2.addEventListener('click', () => {
+                playText(textToSpeech2, voiceSelect2, rateControl2, pitchControl2, 'キジムナー');
+            });
+
+        } else {
+            // Web Speech APIが利用できない場合のフォールバック
+            const container = document.querySelector('.container');
+            const errorMessage = document.createElement('p');
+            errorMessage.textContent = 'お使いのブラウザは音声合成に対応していません。';
+            errorMessage.style.color = 'red';
+            errorMessage.style.textAlign = 'center';
+            container.innerHTML = ''; // コンテナの中身をクリア
+            container.appendChild(errorMessage);
+            console.error('Speech Synthesis not supported');
+        }
+    </script>
+</body>
+</html>
